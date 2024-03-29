@@ -3,11 +3,11 @@ import time
 import ssl
 import random
 import string
-
-from server import process_message, post_or_update_entity, create_subscription, get_historical_data
-
-
+import requests
 import json
+from functions import process_message, post_or_update_entity, create_subscription
+
+subscription_exists = False
 
 # Function to generate a random ID
 def generate_random_id(length):
@@ -23,13 +23,15 @@ def on_message_subscriber(client, userdata, message):
     message = json.loads(message.payload.decode("utf-8"))
     ngsi_entity = process_message(message)
     post_or_update_entity(ngsi_entity)
-    
+
 
 def main():
+    response = requests.get(f"http://localhost:1026/ngsi-ld/v1/subscriptions/urn:ngsi-ld:Subscription:1")
+    if response.status_code == 404:
+        create_subscription()
+    else:
+        print("Subscription already exists.")
 
-    #get_historical_data("urn:ngsi-v2:Sensor:1")
-    create_subscription()
-    
     uid_subscriber = generate_random_id(16)
     client_subscriber = paho.Client(uid_subscriber)
     client_subscriber.on_connect = on_connect_subscriber
@@ -44,15 +46,17 @@ def main():
     client_subscriber.loop_start()
     print("Connected for subscribing - loop started")
 
-    time.sleep(60)
+    # uncomment to keep the script running
+    while True:
+        pass
 
-    # Stopping subscriber loop
-    client_subscriber.loop_stop()
-    client_subscriber.disconnect()
-    print("Disconnected for subscribing.")
+    #uncomment to stop after 60 seconds
+    # time.sleep(60)
+    # # Stopping subscriber loop
+    # client_subscriber.loop_stop()
+    # client_subscriber.disconnect()
+    # print("Disconnected for subscribing.")
 
 
 if __name__ == "__main__":
     main()
-
-   
